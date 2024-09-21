@@ -32,9 +32,6 @@ importers:
       '@googlemaps/markerclusterer':
         specifier: ~2.0.7
         version: 2.0.15
-      '@types/google.maps':
-        specifier: ~3.50.5
-        version: 3.50.5
     devDependencies:
       '@capacitor/android':
         specifier: ^6.1.0
@@ -51,6 +48,9 @@ importers:
       '@ionic/prettier-config':
         specifier: ^1.0.1
         version: 1.0.1(prettier@2.8.8)
+      '@types/google.maps':
+        specifier: ~3.50.5
+        version: 3.50.5
       '@types/resize-observer-browser':
         specifier: ^0.1.7
         version: 0.1.11
