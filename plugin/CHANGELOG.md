@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 6.1.0
+
+* Fix min/max zoom on andoroid and iOS
+* Disable my location button on android by default
+* Added `options` to `enableCurrentLocation` to enable my location button
+
 ## [6.0.1](https://github.com/ionic-team/capacitor-google-maps/compare/@capacitor/google-maps@6.0.0...@capacitor/google-maps@6.0.1) (2024-08-28)
 
 
