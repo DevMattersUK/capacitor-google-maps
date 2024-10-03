@@ -46,6 +46,7 @@
     "build": "pnpm run clean && pnpm run docgen && tsc && rollup -c rollup.config.js && pnpm run downleveldts",
     "clean": "rimraf ./dist",
     "watch": "tsc --watch",
+    "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run build",
     "publish:cocoapod": "pod trunk push ./CapacitorGoogleMaps.podspec --allow-warnings",
     "downleveldts": "pnpm downlevel-dts dist/typings dist/typings/ts_old --to=3.5",
