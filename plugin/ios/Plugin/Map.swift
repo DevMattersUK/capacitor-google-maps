@@ -501,6 +501,15 @@ public class Map {
         }
     }
 
+    private func guardGMapView<T>(callback: @escaping (_ mapView: GMSMapView) -> T) -> T? {
+        guard let mapView = self.mapViewController.GMapView else {
+            CAPLog.print("GMapView not defined")
+            return nil
+        }
+
+        return callback(mapView)
+    }
+
     private func getFrameOverflowBounds(frame: CGRect, mapBounds: CGRect) -> [CGRect] {
         var intersections: [CGRect] = []
 
