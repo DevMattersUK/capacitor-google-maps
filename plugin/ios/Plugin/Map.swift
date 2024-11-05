@@ -10,7 +10,7 @@ public struct LatLng: Codable {
 
 class GMViewController: UIViewController {
     var mapViewBounds: [String: Double]!
-    var GMapView: GMSMapView!
+    var GMapView: GMSMapView?
     var cameraPosition: [String: Double]!
     var minimumClusterSize: Int?
     var mapId: String?
@@ -37,14 +37,19 @@ class GMViewController: UIViewController {
     }
 
     func initClusterManager(_ minClusterSize: Int?) {
+        guard let mapView = self.GMapView else {
+            CAPLog.print("GMapView not defined")
+            return
+        }
+
         let iconGenerator = GMUDefaultClusterIconGenerator()
         let algorithm = GMUNonHierarchicalDistanceBasedAlgorithm()
-        let renderer = GMUDefaultClusterRenderer(mapView: self.GMapView, clusterIconGenerator: iconGenerator)
+        let renderer = GMUDefaultClusterRenderer(mapView: mapView, clusterIconGenerator: iconGenerator)
         self.minimumClusterSize = minClusterSize
         if let minClusterSize = minClusterSize {
             renderer.minimumClusterSize = UInt(minClusterSize)
         }
-        self.clusterManager = GMUClusterManager(map: self.GMapView, algorithm: algorithm, renderer: renderer)
+        self.clusterManager = GMUClusterManager(map: mapView, algorithm: algorithm, renderer: renderer)
     }
 
     func destroyClusterManager() {
@@ -119,16 +124,18 @@ public class Map {
                 target.removeAllSubview()
                 self.mapViewController.view.frame = target.bounds
                 target.addSubview(self.mapViewController.view)
-                self.mapViewController.GMapView.delegate = self.delegate
+                self.mapViewController.GMapView?.delegate = self.delegate
             }
 
-            let minZoom = self.config.minZoom ?? self.mapViewController.GMapView.minZoom
-            let maxZoom = self.config.maxZoom ?? self.mapViewController.GMapView.maxZoom
-            self.mapViewController.GMapView.setMinZoom(minZoom, maxZoom: maxZoom)
+            self.guardGMapView { mapView in
+                let minZoom = self.config.minZoom ?? mapView.minZoom
+                let maxZoom = self.config.maxZoom ?? mapView.maxZoom
+                mapView.setMinZoom(minZoom, maxZoom: maxZoom)
+            }
 
             if let styles = self.config.styles {
                 do {
-                    self.mapViewController.GMapView.mapStyle = try GMSMapStyle(jsonString: styles)
+                    self.mapViewController.GMapView?.mapStyle = try GMSMapStyle(jsonString: styles)
                 } catch {
                     CAPLog.print("Invalid Google Maps styles")
                 }
@@ -408,68 +415,83 @@ public class Map {
     }
 
     func setCamera(config: GoogleMapCameraConfig) throws {
-        let currentCamera = self.mapViewController.GMapView.camera
+        self.guardGMapView { mapView in
+            let currentCamera = mapView.camera
 
-        let lat = config.coordinate?.lat ?? currentCamera.target.latitude
-        let lng = config.coordinate?.lng ?? currentCamera.target.longitude
+            let lat = config.coordinate?.lat ?? currentCamera.target.latitude
+            let lng = config.coordinate?.lng ?? currentCamera.target.longitude
 
-        let zoom = config.zoom ?? currentCamera.zoom
-        let bearing = config.bearing ?? Double(currentCamera.bearing)
-        let angle = config.angle ?? currentCamera.viewingAngle
+            let zoom = config.zoom ?? currentCamera.zoom
+            let bearing = config.bearing ?? Double(currentCamera.bearing)
+            let angle = config.angle ?? currentCamera.viewingAngle
 
-        let animate = config.animate ?? false
+            let animate = config.animate ?? false
 
-        DispatchQueue.main.sync {
-            let newCamera = GMSCameraPosition(latitude: lat, longitude: lng, zoom: zoom, bearing: bearing, viewingAngle: angle)
+            DispatchQueue.main.sync {
+                let newCamera = GMSCameraPosition(latitude: lat, longitude: lng, zoom: zoom, bearing: bearing, viewingAngle: angle)
 
-            if animate {
-                self.mapViewController.GMapView.animate(to: newCamera)
-            } else {
-                self.mapViewController.GMapView.camera = newCamera
+                if animate {
+                    mapView.animate(to: newCamera)
+                } else {
+                    mapView.camera = newCamera
+                }
             }
         }
-
     }
 
-    func getMapType() -> GMSMapViewType {
-        return self.mapViewController.GMapView.mapType
+    func getMapType() -> GMSMapViewType? {
+        return self.guardGMapView(callback: { mapView -> GMSMapViewType in
+            return mapView.mapType
+        })
     }
 
     func setMapType(mapType: GMSMapViewType) throws {
-        DispatchQueue.main.sync {
-            self.mapViewController.GMapView.mapType = mapType
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                mapView.mapType = mapType
+            }
         }
     }
 
     func enableIndoorMaps(enabled: Bool) throws {
-        DispatchQueue.main.sync {
-            self.mapViewController.GMapView.isIndoorEnabled = enabled
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                mapView.isIndoorEnabled = enabled
+            }
         }
     }
 
     func enableTrafficLayer(enabled: Bool) throws {
-        DispatchQueue.main.sync {
-            self.mapViewController.GMapView.isTrafficEnabled = enabled
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                mapView.isTrafficEnabled = enabled
+            }
         }
     }
 
     func enableAccessibilityElements(enabled: Bool) throws {
-        DispatchQueue.main.sync {
-            self.mapViewController.GMapView.accessibilityElementsHidden = enabled
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                mapView.accessibilityElementsHidden = enabled
+            }
         }
     }
 
     func enableCurrentLocation(enabled: Bool, enableButton: Bool) throws {
-        DispatchQueue.main.sync {
-            self.mapViewController.GMapView.isMyLocationEnabled = enabled
-            self.mapViewController.GMapView.settings.myLocationButton = enableButton
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                mapView.isMyLocationEnabled = enabled
+                mapView.settings.myLocationButton = enableButton
+            }
         }
     }
 
     func setPadding(padding: GoogleMapPadding) throws {
-        DispatchQueue.main.sync {
-            let mapInsets = UIEdgeInsets(top: CGFloat(padding.top), left: CGFloat(padding.left), bottom: CGFloat(padding.bottom), right: CGFloat(padding.right))
-            self.mapViewController.GMapView.padding = mapInsets
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                let mapInsets = UIEdgeInsets(top: CGFloat(padding.top), left: CGFloat(padding.left), bottom: CGFloat(padding.bottom), right: CGFloat(padding.right))
+                mapView.padding = mapInsets
+            }
         }
     }
 
@@ -491,14 +513,27 @@ public class Map {
     }
 
     func getMapLatLngBounds() -> GMSCoordinateBounds? {
-        return GMSCoordinateBounds(region: self.mapViewController.GMapView.projection.visibleRegion())
+        return self.guardGMapView { mapView in
+            return GMSCoordinateBounds(region: mapView.projection.visibleRegion())
+        }
     }
 
     func fitBounds(bounds: GMSCoordinateBounds, padding: CGFloat) {
-        DispatchQueue.main.sync {
-            let cameraUpdate = GMSCameraUpdate.fit(bounds, withPadding: padding)
-            self.mapViewController.GMapView.animate(with: cameraUpdate)
+        self.guardGMapView { mapView in
+            DispatchQueue.main.sync {
+                let cameraUpdate = GMSCameraUpdate.fit(bounds, withPadding: padding)
+                mapView.animate(with: cameraUpdate)
+            }
         }
+    }
+
+    private func guardGMapView<T>(callback: @escaping (_ mapView: GMSMapView) -> T) -> T? {
+        guard let mapView = self.mapViewController.GMapView else {
+            CAPLog.print("GMapView not defined")
+            return nil
+        }
+
+        return callback(mapView)
     }
 
     private func getFrameOverflowBounds(frame: CGRect, mapBounds: CGRect) -> [CGRect] {
