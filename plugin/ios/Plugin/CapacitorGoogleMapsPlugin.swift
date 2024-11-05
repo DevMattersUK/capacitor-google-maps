@@ -545,7 +545,7 @@ public class CapacitorGoogleMapsPlugin: CAPPlugin, GMSMapViewDelegate {
                 throw GoogleMapErrors.mapNotFound
             }
 
-            let mapType = GMSMapViewType.toString(mapType: map.getMapType())
+            let mapType = GMSMapViewType.toString(mapType: map.getMapType() ?? GMSMapViewType.none)
 
             call.resolve([
                 "type": mapType
@@ -686,7 +686,7 @@ public class CapacitorGoogleMapsPlugin: CAPPlugin, GMSMapViewDelegate {
             if enabled && checkLocationPermission() != "granted" {
                 throw GoogleMapErrors.permissionsDeniedLocation
             }
-            
+
             let enableButton = call.getBool("enableButton") ?? false
 
             try map.enableCurrentLocation(enabled: enabled, enableButton: enableButton)
@@ -797,14 +797,15 @@ public class CapacitorGoogleMapsPlugin: CAPPlugin, GMSMapViewDelegate {
             }
 
             try DispatchQueue.main.sync {
-                guard let bounds = map.getMapLatLngBounds() else {
+                guard let bounds = map.getMapLatLngBounds(),
+                      let mapView = map.mapViewController.GMapView else {
                     throw GoogleMapErrors.unhandledError("Google Map Bounds could not be found.")
                 }
 
                 call.resolve(
                     formatMapBoundsForResponse(
                         bounds: bounds,
-                        cameraPosition: map.mapViewController.GMapView.camera
+                        cameraPosition: mapView.camera
                     )
                 )
             }
